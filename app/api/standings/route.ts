@@ -22,42 +22,38 @@ export async function GET() {
       next: { revalidate: 3600 },
     })
 
-    if (!response.ok) {
+    let standings_data: any[] = []
+
+    if (response.ok) {
+      try {
+        const data = await response.json()
+        standings_data = data.response?.[0]?.league?.standings || []
+      } catch (jsonError) {
+        console.error("JSON 파싱 오류:", jsonError)
+        standings_data = []
+      }
+    } else {
       console.error(`API 요청 실패: ${response.status} ${response.statusText}`)
-
-      // 실패 시 → mockData 반환
-      const mockData = getMockData()
-      return NextResponse.json({ data: mockData }, { status: 200 })
+      standings_data = []
     }
 
-    let data: any = {}
-    try {
-      data = await response.json()
-    } catch (jsonError) {
-      console.error("JSON 파싱 오류:", jsonError)
-
-      // 파싱 실패 시 → mockData 반환
-      const mockData = getMockData()
-      return NextResponse.json({ data: mockData }, { status: 200 })
-    }
-
-    const standings_data = data.response?.[0]?.league?.standings || []
-
-    const processed_data = standings_data.map((team_info: any) => ({
-      순위: team_info.position || 0,
-      팀명: team_info.team?.name || "알 수 없음",
-      경기수: team_info.games?.played || 0,
-      승: team_info.games?.win?.total || 0,
-      패: team_info.games?.lose?.total || 0,
-      승률: team_info.games?.win?.percentage || "0.000",
-      게임차: team_info.games?.games_behind || "0",
-    }))
+    const processed_data =
+      standings_data.length > 0
+        ? standings_data.map((team_info: any) => ({
+            순위: team_info.position || 0,
+            팀명: team_info.team?.name || "알 수 없음",
+            경기수: team_info.games?.played || 0,
+            승: team_info.games?.win?.total || 0,
+            패: team_info.games?.lose?.total || 0,
+            승률: team_info.games?.win?.percentage || "0.000",
+            게임차: team_info.games?.games_behind || "0",
+          }))
+        : getMockData()
 
     return NextResponse.json({ data: processed_data }, { status: 200 })
   } catch (error) {
     console.error("순위 데이터 조회 오류:", error)
 
-    // 최종 catch → mockData 반환
     const mockData = getMockData()
     return NextResponse.json({ data: mockData }, { status: 200 })
   }

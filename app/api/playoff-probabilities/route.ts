@@ -16,5 +16,5 @@ export async function GET() {
     { 팀명: '롯데 자이언츠', 순위: 10, 확률: Math.round(Math.random() * 5) },
   ]
 
-  return NextResponse.json(data)
+  return NextResponse.json(data, { status: 200 })
 }
